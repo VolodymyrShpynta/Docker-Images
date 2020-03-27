@@ -1,0 +1,50 @@
+version: '3'
+services:
+  aerospike:
+    image: aerospike/aerospike-server:4.3.0.8
+    ports:
+      - "3000:3000"
+  couchbase:
+    image: couchbase:community-4.5.1
+    ports:
+      - "8091-8094:8091-8094"
+      - "11210:11210"
+    volumes:
+      - /tmp:/tmp
+  mariadb:
+    image: mariadb:10.3.2
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=true
+      - MYSQL_USER=mariadb
+      - MYSQL_PASSWORD=letmein
+      - MYSQL_DATABASE=offer_db2
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+  zookeeper:
+    image: confluentinc/cp-zookeeper:4.1.2
+    hostname: zookeeper
+    ports:
+      - "2181:2181"
+    volumes:
+      - /tmp/lib/zookeeper/data:/var/lib/zookeeper/data
+      - /tmp/lib/zookeeper/log:/var/lib/zookeeper/log
+    environment:
+      - ZOOKEEPER_CLIENT_PORT=2181
+  kafka:
+    image: confluentinc/cp-kafka:4.1.2
+    hostname: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=LISTENER_DOCKER_INTERNAL:PLAINTEXT,LISTENER_DOCKER_EXTERNAL:PLAINTEXT
+      - KAFKA_ADVERTISED_LISTENERS=LISTENER_DOCKER_INTERNAL://kafka:19092,LISTENER_DOCKER_EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092
+      - KAFKA_INTER_BROKER_LISTENER_NAME=LISTENER_DOCKER_INTERNAL
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_LOG4J_LOGGERS=kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO
+    volumes:
+      - /tmp/lib/kafka/data:/var/lib/kafka/data
+    depends_on:
+      - zookeeper
